@@ -81,7 +81,7 @@ typedef struct Token_s
         float floatNum;
         // Allocate memory for the variable name when calling it
         char *name;
-    };
+    } value;
 
     // For Linked-List
     Token_t *next;
@@ -98,15 +98,15 @@ void AddTokens(LexTokens l, int *i, float *f, char *name)
     link->next = NULL;
     if (i != NULL)
     {
-        link->integerNum = *i;
+        link->value.integerNum = *i;
     }
     else if (f != NULL)
     {
-        link->floatNum = *f;
+        link->value.floatNum = *f;
     }
     else if (name != NULL)
     {
-        link->name = name;
+        link->value.name = name;
     }
 
     // Start of list
@@ -234,7 +234,7 @@ void Lex(char *s)
 {
     // printf("Lex: %s\n", s);
     //  Types
-    if (strcmp(s, "int") == 0 || strcmp(s, "bool") == 0 || strcmp(s, "string") == 0)
+    if (strcmp(s, "int") == 0 || strcmp(s, "bool") == 0 || strcmp(s, "string") == 0 || strcmp(s, "float") == 0 || strcmp(s, "var") == 0)
     {
         AddTokens(L_TYPE, NULL, NULL, s);
     }
@@ -316,7 +316,11 @@ void Lex(char *s)
     }
     else
     {
-        AddTokens(L_SYMBOL, NULL, NULL, s);
+        // Super odd edge case idk something to do with new lines
+        if (strchr(s, '\0') && strlen(s) == 1) {
+            //printf("I think this new line being weird\n");
+        } else
+            AddTokens(L_SYMBOL, NULL, NULL, s);
     }
 }
 
@@ -340,7 +344,7 @@ void Assign()
 void StartReading(FILE *file)
 {
     char letter;
-    char lastLetter = NULL;
+    char lastLetter;
     bool inString = false;
 
     do
@@ -428,142 +432,40 @@ void PrintTokens()
     {
         if (current->lt == L_SYMBOL)
         {
-            printf("Type: %s Value: %s\n", LexTokenNames[current->lt], current->name);
+            printf("Type: %s Value: %s\n", LexTokenNames[current->lt], current->value.name);
         }
         else if (current->lt == L_FLOAT)
         {
-            printf("Type: %s Value: %f\n", LexTokenNames[current->lt], current->floatNum);
+            printf("Type: %s Value: %f\n", LexTokenNames[current->lt], current->value.floatNum);
         }
         else if (current->lt == L_INT)
         {
-            printf("Type: %s Value: %i\n", LexTokenNames[current->lt], current->integerNum);
-        }
-        else if (current->lt == L_STRING)
-        {
-            printf("Type: %s Value: %s\n", LexTokenNames[current->lt], current->name);
+            printf("Type: %s Value: %i\n", LexTokenNames[current->lt], current->value.integerNum);
         }
         else
         {
-            printf("Type: %s\n", LexTokenNames[current->lt]);
+            if (current->value.name != NULL) {
+                printf("Type: %s Value: %s\n", LexTokenNames[current->lt], current->value.name);
+            }
+            else 
+                printf("Type: %s\n", LexTokenNames[current->lt]);
         }
         current = current->next;
     }
 }
 
-typedef struct Number_s Number_t;
-
-typedef struct Number_s {
-
-    LexTokens lt;
-    union values
-    {
-        int i;
-        float f;
-        char op;
-    };
-    Number_t *next;
-
-}Number_t;
-
-Number_t *Expressionhead = NULL;
-
-void AddToExpression(int *i, float *f, char *op) {
-    Number_t *link = (Number_t *)malloc(sizeof(Number_t));
-    if (i != NULL) {
-        link->i = *i;
-        link->lt = L_INT;
-    } else if (f != NULL) {
-        link->f = *f;
-        link->lt = L_FLOAT;
-    } else {
-        link->op = *op;
-        link->lt = L_SYMBOL;
-    }
-    link->next = NULL;
-
-    // New buffer, create head
-    if (Expressionhead == NULL)
-    {
-        Expressionhead = link;
-        return;
-    }
-
-    // Find last element or tail
-    Number_t *current = Expressionhead;
-    while (current->next != NULL)
-    {
-        current = current->next;
-    }
-
-    // Append the new node to the end of the list
-    current->next = link;
-}
-
-void EvaluateExpression() {
-    int iNum = 0;
-    float fNum = 0.00f;
-    char c = NULL;
-    int count = 0;
-    Number_t *current = Expressionhead;
-
+void FreeTokens() {
+    Token_t *current = tokenHead;
     while (current != NULL) {
-        if (current->lt == L_INT) {
-            if (count == 0) {
-                iNum = current->i;
-            } else {
-                iNum = iNum * 10 + current->i;
-            }
-        } else if (current->lt == L_FLOAT) {
-            if (count == 0) {
-                fNum = current->i;
-            } else {
-                fNum = iNum * 10 + current->i;
-            }
-        } else {
-            c = current->op;
-        }
+        Token_t *temp = current;
         current = current->next;
-        printf("%i", iNum);
-        printf("%f", fNum);
-        printf("%c", c);
-    }
-}
-
-void PrintStatement(char *output)
-{
-    printf(output);
-}
-
-void PrintEval(Token_t *t) {
-    while (t->lt != L_CLOSEDPARENTHESE) {
-        if (t->lt == L_INT) {
-            printf("Integer found!");
-        } else if (t->lt == L_FLOAT) {
-            printf("Float found");
-        } else if (t->lt == L_STRING) {
-            printf("%s", t->name);
-        }
-        t = t->next;
-    }
-}
-
-void Determine()
-{
-    Token_t *t = tokenHead;
-    while (t != NULL)
-    {
-        if (strcmp(t->name, "print") == 0 && t->next->lt == L_OPENPARENTHESE)
-        {
-            printf("\nPrint Statment: ");
-            PrintEval(t->next->next);
-        }
-        t = t->next;
+        free(temp);
     }
 }
 
 int main()
 {
-    const char input_file[] = "C:/Users/conai/Documents/Coding Projects/test.txt";
+    const char input_file[] = "test.txt";
     // Open file and initialize arrays
     FILE *file = fopen(input_file, "r");
     if (!file)
@@ -574,8 +476,8 @@ int main()
 
     StartReading(file);
 
-    //PrintTokens();
+    PrintTokens();
+    FreeTokens();
     puts("Success!");
-    Determine();
     return 0;
 }

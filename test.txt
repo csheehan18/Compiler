@@ -1,0 +1,4 @@
+var xz = 10.0;
+var five = 5;
+var start = "Hello";
+var text = "World\tWorld";
