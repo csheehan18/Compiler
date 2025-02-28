@@ -1,3 +1,6 @@
+#ifndef VARIABLES_H
+
+#define VARIABLES_H
 typedef enum
 {
     // Types of tokens (Im sure it's gonna be much longer in the end)
@@ -77,5 +80,4 @@ const char *LexTokenNames[] = {
     "L_OR",
     "L_SYMBOL"};
 
-
-extern Token_t *tokenHead;
+    #endif

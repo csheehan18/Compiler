@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include "variables.h"
+#include "parser.h"
 
 stringBuff *bufferHead = NULL;
 
@@ -399,6 +400,7 @@ int main(int argc, char **args)
     StartReading(file);
 
     //PrintTokens();
+    parseTokens(tokenHead);
     FreeTokens();
     puts("Success!");
     return 0;
